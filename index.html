@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Carlos: Expedición Extrema</title>
+    <style>
+        body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        canvas { border: 4px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: block; }
+        
+        .overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 100; }
+        
+        /* Estilo para la pantalla de victoria con la chica */
+        #pantallaFinal { background: linear-gradient(to right, #0919ac, #5f6fff,#daa2ff, #fe7b7b, #ac0909); color:  #000000f1;  text-shadow: 20px 2px 14px rgb(255, 255, 255);}
+        #chicaAnimada {  background: linear-gradient(30deg, rgba(255, 123, 0, 0.76), rgba(128, 83, 0, 0.795) 50%, rgba(255, 174, 0, 0.815)); width: 180px; height: 200px; margin-bottom: 10px; transition: transform 0.1s; }
+        
+        #pantallaPerder { background: rgba(0, 0, 0, 0.9); color: #fff; }
+        .btn-restart { padding: 15px 35px; font-size: 20px; font-weight: bold; cursor: pointer; background: #ff4757; color: white; border: none; border-radius: 50px; margin-top: 20px; transition: 0.3s; }
+        .btn-restart:hover { transform: scale(1.1); background: #ff6b81; }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="pantallaFinal" class="overlay">
+        <img id="chicaAnimada" src="img/chica1.png" alt="Felicidad">
+        <h1>🎂 ¡MISIÓN CUMPLIDA CARLOS! 🎂</h1>
+        <h2>Feliz cumpleaños mi terroncito de azucar,
+            tarde muchas noches programando <br> y pensando en como hacerte
+            una aventura especial,<br>pero lo logre espero que te guste
+            y que la disfrutes tanto como yo disfruto estar contigo
+            <br>. Te amo mucho mi vida. ❤️
+        </h2>
+        <p style="font-size: 24px; font-weight: bold;">¡Hora De Comer Pastel, Ñan Ñan!</p>
+        <button class="btn-restart" onclick="location.reload()">REINICIAR AVENTURA</button>
+    </div>
+
+    <div id="pantallaPerder" class="overlay">
+        <h1>HAS CAÍDO EN COMBATE</h1>
+        <button class="btn-restart" onclick="location.reload()">REINTENTAR</button>
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 800; canvas.height = 450;
+
+    // --- RECURSOS ---
+    const imgFondo1 = new Image(); imgFondo1.src = 'img/fondo_nivel1.png';
+    const imgFondo2 = new Image(); imgFondo2.src = 'img/fondo_nivel2.png';
+    const imgFondo3 = new Image(); imgFondo3.src = 'img/fondo_nivel3.jpeg';
+    const imgPuerta = new Image(); imgPuerta.src = 'img/puerta.png';
+    const imgJefe = new Image(); imgJefe.src = 'img/jefe.png';
+    const imgLadron = new Image(); imgLadron.src = 'img/ladron.png';
+
+    function cargarSerie(nombre, total) {
+        let temp = [];
+        for(let i=1; i<=total; i++) {
+            let img = new Image(); img.src = `img/${nombre}${i}.png`;
+            temp.push(img);
+        }
+        return temp;
+    }
+
+    const sprites = {
+        camina: cargarSerie('carlos_camina', 6),
+        salta: cargarSerie('carlos_salta', 6),
+        ataca: cargarSerie('carlos_ataca', 4),
+        pierde: cargarSerie('carlos_pierde', 4)
+    };
+
+    const sfxFondo = new Audio('audio_nivel.mp3'); sfxFondo.loop = true;
+    const sfxAtaque = new Audio('audio_ataque.mp3');
+    const sfxEnemigo = new Audio('audio_enemigo.mp3');
+    const sfxPerder = new Audio('audio_perder.mp3');
+    const sfxFinal = new Audio('audio_final.mp3');
+     const sfxFinal1 = new Audio('audio_final1.mp3');
+      const sfxFinal2 = new Audio('audio_final2.mp3');
+
+    // --- ESTADO ---
+    let nivel = 1; let juegoActivo = true; let mirandoIzquierda = false;
+    let animFrame = 0; let animTimer = 0;
+    let finalTimer = 0; // Para la animación de la chica en el HTML
+    const sueloY = 380;
+    const keys = {};
+
+    const carlos = {
+        x: 50, y: sueloY - 150, w: 70, h: 120, hp: 100, vy: 0, 
+        gravedad: 1.2, salto: -20, enSuelo: true, speed: 6, atacando: false, muerto: false
+    };
+
+    const jefe = { x: 350, y: sueloY - 150, w: 120, h: 150, hp: 100, maxHp: 100, vivo: true, mirandoIzquierda: true };
+    const ladron = { x: 700, y: sueloY - 140, w: 100, h: 140, hp: 80, maxHp: 80, vivo: true, mirandoIzquierda: true };
+    let proyectiles = [];
+
+    const muros = [
+        {x: 200, y: 0, w: 40, h: 300}, 
+        {x: 400, y: 150, w: 40, h: 300}, 
+        {x: 600, y: 0, w: 40, h: 250}
+    ];
+    let llave = { x: 350, y: 60, obtenida: false };
+    let puerta = { x: 645, y: 300, w: 150, h: 140 };
+
+    window.addEventListener('keydown', e => {
+        if(e.code === 'KeyZ' || e.code === 'Space') { 
+            carlos.atacando = true; sfxAtaque.play().catch(()=>{}); 
+        }
+        keys[e.code] = true;
+        if (juegoActivo && !carlos.muerto) sfxFondo.play().catch(()=>{});
+    });
+    window.addEventListener('keyup', e => {
+        if(e.code === 'KeyZ' || e.code === 'Space') carlos.atacando = false;
+        keys[e.code] = false;
+    });
+
+    function detenerMusica() { sfxFondo.pause(); sfxFondo.currentTime = 0; }
+
+    function checkColision(nx, ny) {
+        if (nivel === 3) {
+            for (let m of muros) {
+                if (nx < m.x + m.w && nx + carlos.w > m.x && ny < m.y + m.h && ny + carlos.h > m.y) return true;
+            }
+        }
+        if (nx < 0 || nx + carlos.w > canvas.width || ny < 0) return true;
+        return false;
+    }
+
+    function dispararEnemigo(obj, tipo) {
+        sfxEnemigo.play().catch(()=>{});
+        let dir = obj.x > carlos.x ? -1 : 1;
+        proyectiles.push({ x: obj.x, y: obj.y + 60, vx: dir * 7, vy: 0, tipo: tipo });
+        proyectiles.push({ x: obj.x, y: obj.y + 60, vx: dir * 7, vy: -2, tipo: tipo });
+        proyectiles.push({ x: obj.x, y: obj.y + 60, vx: dir * 7, vy: 2, tipo: tipo });
+    }
+
+    function actualizar() {
+        if (!juegoActivo || carlos.muerto) return;
+
+        let sigX = carlos.x;
+        let sigY = carlos.y;
+
+        if (keys['ArrowLeft']) { sigX -= carlos.speed; mirandoIzquierda = true; }
+        if (keys['ArrowRight']) { sigX += carlos.speed; mirandoIzquierda = false; }
+        if (!checkColision(sigX, carlos.y)) carlos.x = sigX;
+
+        if (nivel < 3) {
+            if (keys['ArrowUp'] && carlos.enSuelo) { carlos.vy = carlos.salto; carlos.enSuelo = false; }
+            carlos.vy += carlos.gravedad;
+            sigY += carlos.vy;
+            if (sigY >= sueloY - carlos.h) { sigY = sueloY - carlos.h; carlos.vy = 0; carlos.enSuelo = true; }
+            if (!checkColision(carlos.x, sigY)) carlos.y = sigY;
+        } else {
+            if (keys['ArrowUp']) sigY -= carlos.speed;
+            if (keys['ArrowDown']) sigY += carlos.speed;
+            if (!checkColision(carlos.x, sigY)) carlos.y = sigY;
+        }
+
+        
+if (nivel === 3) {
+   
+    // Lógica de daño por pullas
+    for (let m of muros) {
+        // Si Carlos toca el área del muro (incluyendo un pequeño margen para las pullas)
+        if (carlos.x < m.x + m.w + 5 && 
+            carlos.x + carlos.w > m.x - 5 && 
+            carlos.y < m.y + m.h && 
+            carlos.y + carlos.h > m.y) {
+            
+            carlos.hp -= 0.5; // El daño es constante mientras lo toca
+            // Efecto visual de daño (opcional: empujar a Carlos un poco)
+            if (mirandoIzquierda) carlos.x += 50; else carlos.x -= 50;
+        }
+    }
+}
+
+        // --- NIVEL 1 ---
+        if (nivel === 1 && jefe.vivo) {
+            jefe.mirandoIzquierda = (jefe.x > carlos.x);
+            if (Math.random() < 0.02) dispararEnemigo(jefe, '📄');
+            if (carlos.atacando && Math.abs(carlos.x - jefe.x) < 120 && Math.abs(carlos.y - jefe.y) < 100) {
+                jefe.hp -= 1;
+                if (jefe.hp <= 0) { jefe.vivo = false; setTimeout(() => { nivel = 2; carlos.x = 50; }, 800); }
+            }
+        }
+
+        // --- NIVEL 2 ---
+        if (nivel === 2 && ladron.vivo) {
+            ladron.mirandoIzquierda = (ladron.x > carlos.x);
+            ladron.x += (ladron.x > carlos.x ? -3 : 3);
+            if (Math.random() < 0.03) dispararEnemigo(ladron, '🔪');
+            if (carlos.atacando && Math.abs(carlos.x - ladron.x) < 100) {
+                ladron.hp -= 1.5;
+                if (ladron.hp <= 0) { ladron.vivo = false; setTimeout(() => { nivel = 3; carlos.x = 50; carlos.y = 50; }, 800); }
+            }
+        }
+
+        for (let i = proyectiles.length - 1; i >= 0; i--) {
+            proyectiles[i].x += proyectiles[i].vx; proyectiles[i].y += proyectiles[i].vy;
+            if (Math.abs(proyectiles[i].x - (carlos.x + 30)) < 40 && Math.abs(proyectiles[i].y - (carlos.y + 50)) < 50) {
+                if(!carlos.atacando) carlos.hp -= 5; proyectiles.splice(i, 1);
+            }
+        }
+
+        // --- FINAL DEL JUEGO ---
+        if (nivel === 3) {
+            if (!llave.obtenida && Math.abs(carlos.x - llave.x) < 50 && Math.abs(carlos.y - llave.y) < 50) llave.obtenida = true;
+            if (llave.obtenida && carlos.x > puerta.x - 50 && carlos.y > puerta.y - 50) {
+                // Al llegar al final del juego
+juegoActivo = false; 
+detenerMusica(); 
+
+// 1. Configurar sfxFinal1 para que sea infinito (Bucle)
+sfxFinal2.loop = true; 
+sfxFinal2.play();
+
+// 2. Reproducir los otros dos una sola vez (Normal)
+sfxFinal1.play(); 
+// sfxFinal.play();
+                document.getElementById('pantallaFinal').style.display = 'flex';
+                animarChicaFinal(); // Llama a la animación del HTML
+            }
+        }
+
+        if (carlos.hp <= 0 && !carlos.muerto) {
+            carlos.muerto = true; detenerMusica(); sfxPerder.play();
+        }
+    }
+
+    // --- ANIMACIÓN DE LA CHICA EN EL OVERLAY ---
+    function animarChicaFinal() {
+        let frame = 1;
+        const imgElement = document.getElementById('chicaAnimada');
+        setInterval(() => {
+            frame = (frame % 4) + 1; // Ciclo de 1 a 4
+            imgElement.src = `img/chica${frame}.png`;
+            
+            // Efecto de giro y salto en el CSS dinámico
+            let scaleX = Math.sin(Date.now() / 800);
+            imgElement.style.transform = `scaleX(${scaleX})`;
+        }, 200);
+    }
+
+    function dibujar() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let fondo = nivel === 1 ? imgFondo1 : (nivel === 2 ? imgFondo2 : imgFondo3);
+        ctx.drawImage(fondo, 0, 0, 800, 450);
+
+        if (nivel === 3) {
+    muros.forEach(m => {
+        // 1. CREAR EL DEGRADADO (de arriba hacia abajo: m.y a m.y + m.h)
+        // Puedes cambiar estos colores a tu gusto
+        let gradiente = ctx.createLinearGradient(m.x, m.y, m.x, m.y + m.h);
+        gradiente.addColorStop(0, "#1e8449");   // Verde oscuro (arriba)
+        gradiente.addColorStop(0.3, "#2ecc71"); // Verde brillante
+        gradiente.addColorStop(0.7, "#58d68d"); // Verde claro
+        gradiente.addColorStop(1, "#145a32");   // Verde muy oscuro (abajo)
+
+        // 2. DIBUJAR EL MURO
+        ctx.fillStyle = gradiente;
+        ctx.fillRect(m.x, m.y, m.w, m.h);
+
+        // 3. DIBUJAR LAS PULLAS (Color metálico o rojo)
+        ctx.fillStyle = "#ecf0f1";
+       // Pullas en los lados izquierdo y derecho del muro
+        for (let py = m.y; py < m.y + m.h; py += 20) {
+            // Pulla izquierda
+            ctx.beginPath();
+            ctx.moveTo(m.x, py);
+            ctx.lineTo(m.x - 30, py + 40);
+            ctx.lineTo(m.x, py + 10);
+            ctx.fill();
+
+            // Pulla derecha
+            ctx.beginPath();
+            ctx.moveTo(m.x + m.w, py);
+            ctx.lineTo(m.x + m.w + 30, py + 40);
+            ctx.lineTo(m.x + m.w, py + 10);
+            ctx.fill();
+        }
+    });
+            // LLAVE Y PUERTA
+            if(!llave.obtenida) { ctx.font = "40px Arial"; ctx.fillText("🔑", llave.x, llave.y + 35); }
+            ctx.drawImage(imgPuerta, puerta.x, puerta.y, puerta.w, puerta.h);
+        }
+
+        // CARLOS ANIMACIÓN
+        let serie = carlos.muerto ? sprites.pierde : (carlos.atacando ? sprites.ataca : (carlos.enSuelo || nivel === 3 ? sprites.camina : sprites.salta));
+        if (carlos.muerto && animFrame === 3) document.getElementById('pantallaPerder').style.display = 'flex';
+        
+        animTimer++;
+        if (animTimer >= 8) { animFrame = (animFrame + 1) % (carlos.muerto ? 4 : (carlos.atacando ? 4 : 6)); animTimer = 0; }
+
+        ctx.save();
+        if (mirandoIzquierda) { ctx.translate(carlos.x + carlos.w, carlos.y); ctx.scale(-1, 1); ctx.drawImage(serie[animFrame] || serie[0], 0, 0, carlos.w, carlos.h); }
+        else { ctx.drawImage(serie[animFrame] || serie[0], carlos.x, carlos.y, carlos.w, carlos.h); }
+        ctx.restore();
+
+        // ENEMIGOS
+        if (nivel === 1 && jefe.vivo) {
+            ctx.save();
+            if(!jefe.mirandoIzquierda) { ctx.translate(jefe.x + jefe.w, jefe.y); ctx.scale(-1, 1); ctx.drawImage(imgJefe, 0, 0, jefe.w, jefe.h); }
+            else { ctx.drawImage(imgJefe, jefe.x, jefe.y, jefe.w, jefe.h); }
+            ctx.restore();
+            dibujarBarraVida(jefe.x, jefe.y - 20, jefe.w, jefe.hp, jefe.maxHp, "red");
+        }
+
+        if (nivel === 2 && ladron.vivo) {
+            ctx.save();
+            if(!ladron.mirandoIzquierda) { ctx.translate(ladron.x + ladron.w, ladron.y); ctx.scale(-1, 1); ctx.drawImage(imgLadron, 0, 0, ladron.w, ladron.h); }
+            else { ctx.drawImage(imgLadron, ladron.x, ladron.y, ladron.w, ladron.h); }
+            ctx.restore();
+            dibujarBarraVida(ladron.x, ladron.y - 20, ladron.w, ladron.hp, ladron.maxHp, "red");
+        }
+
+        proyectiles.forEach(p => { ctx.font = "30px Arial"; ctx.fillText(p.tipo, p.x, p.y); });
+        dibujarBarraVida(20, 30, 200, carlos.hp, 100, "#48ff00");
+    }
+
+    function dibujarBarraVida(x, y, w, actual, max, color) {
+        ctx.fillStyle = "black"; ctx.fillRect(x, y, w, 10);
+        ctx.fillStyle = color; ctx.fillRect(x, y, Math.max(0, actual/max) * w, 10);
+    }
+
+    function loop() { actualizar(); dibujar(); requestAnimationFrame(loop); }
+    loop();
+</script>
+</body>
+</html>
