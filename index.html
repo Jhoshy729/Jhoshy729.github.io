@@ -34,7 +34,7 @@
         
         .btn-ui { padding: 15px 30px; font-size: 20px; font-weight: bold; cursor: pointer; background: #ff4757; color: white; border: none; border-radius: 50px; margin-top: 15px; }
         
-        /* --- CONTROLES MÓVILES MEJORADOS --- */
+        /* --- CONTROLES MÓVILES --- */
         #controles-movil { 
             position: fixed; bottom: 8%; width: 100%; 
             display: none; justify-content: space-between; 
@@ -58,7 +58,6 @@
 
         .btn-touch:active { transform: scale(0.9); background: rgba(0, 150, 255, 0.8); }
 
-        /* Posiciones de la cruceta */
         #tUp { grid-area: up; }
         #tDown { grid-area: down; }
         #tIzq { grid-area: left; }
@@ -70,7 +69,6 @@
             background: rgba(255, 50, 50, 0.7); width: 100px; height: 100px; 
             border-color: rgba(255,255,255,0.6); font-size: 18px;
         }
-        .btn-ataque:active { background: rgba(255, 50, 50, 1); }
 
         @media (pointer: coarse) { #controles-movil { display: flex; } }
     </style>
@@ -81,15 +79,15 @@
         <canvas id="gameCanvas"></canvas>
 
         <div id="pantallaInicio" class="overlay">
-            <h1>カルロス: EXPEDICIÓN sopresa</h1>
-            <p> Hola...愛してます.</p>
+             <h1>カルロス: EXPEDICIÓN sopresa</h1>
+        <p> Hola...愛してます.</p>
             <button class="btn-ui" onclick="iniciarJuego()">¡INICIAR!</button>
         </div>
 
         <div id="pantallaFinal" class="overlay">
             <img id="chicaAnimada" src="img/chica1.png">
-            <h1>🎂 ¡MISIÓN CUMPLIDA CARLOS! 🎂</h1>
-        <h3>Feliz cumpleaños mi terroncito de azúcar, tarde muchas noches programando </br>y pensando en cómo hacerte una aventura especial...</br> Te amo mucho mi vida. ❤️</h3>
+           <h1>🎂 ¡MISIÓN CUMPLIDA CARLOS! 🎂</h1>
+        <h3>Feliz cumpleaños mi terroncito de azúcar, tarde muchas noches programando y pensando en cómo hacerte una aventura especial... Te amo mucho mi vida. ❤️</h3>
         <p>¡Hora De Comer Pastel, Ñan Ñan!</p>
             <button class="btn-ui" onclick="location.reload()">REINICIAR</button>
         </div>
@@ -168,6 +166,17 @@
         loop();
     }
 
+    // --- ESCUCHA DE TECLADO (PC) ---
+    window.addEventListener('keydown', e => {
+        keys[e.code] = true;
+        if(e.code === 'KeyZ' || e.code === 'Space') { carlos.atacando = true; sfxAtaque.play().catch(()=>{}); }
+    });
+    window.addEventListener('keyup', e => {
+        keys[e.code] = false;
+        if(e.code === 'KeyZ' || e.code === 'Space') carlos.atacando = false;
+    });
+
+    // --- ESCUCHA DE TOUCH (MÓVIL) ---
     const vincularTouch = (id, tecla) => {
         const el = document.getElementById(id);
         el.addEventListener('touchstart', (e) => { 
