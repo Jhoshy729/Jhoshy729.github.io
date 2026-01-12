@@ -12,62 +12,65 @@
             height: 100vh; overflow: hidden; touch-action: none; 
         }
         
-        /* Contenedor del juego para que no se corte */
         #game-container {
             position: relative;
             width: 100vw;
-            height: 56.25vw; /* Proporción 16:9 */
+            height: 56.25vw; 
             max-height: 100vh;
             max-width: 177.78vh;
         }
 
-        canvas { 
-            width: 100%; height: 100%; 
-            border: 2px solid #444; display: block; 
-        }
+        canvas { width: 100%; height: 100%; border: 2px solid #444; display: block; }
         
         .overlay { 
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             flex-direction: column; align-items: center; justify-content: center; 
-            text-align: center; z-index: 100; padding: 20px; background: rgba(0,0,0,0.8);
+            text-align: center; z-index: 100; padding: 20px; background: rgba(0,0,0,0.85);
         }
         
         #pantallaInicio { display: flex; }
         #pantallaFinal { background: linear-gradient(135deg, #0919ac, #fe7b7b); color: #000; text-shadow: 0 0 10px white; }
-        #chicaAnimada { width: 120px; height: 150px; margin-bottom: 10px; border-radius: 15px; }
+        #chicaAnimada { width: 120px; height: 150px; margin-bottom: 10px; }
         
-        .btn-ui { 
-            padding: 12px 25px; font-size: 18px; font-weight: bold; cursor: pointer; 
-            background: #ff4757; color: white; border: none; border-radius: 50px; margin-top: 15px; 
-        }
+        .btn-ui { padding: 15px 30px; font-size: 20px; font-weight: bold; cursor: pointer; background: #ff4757; color: white; border: none; border-radius: 50px; margin-top: 15px; }
         
-        /* --- CONTROLES MÓVILES --- */
+        /* --- CONTROLES MÓVILES MEJORADOS --- */
         #controles-movil { 
-            position: fixed; bottom: 5%; width: 100%; 
+            position: fixed; bottom: 8%; width: 100%; 
             display: none; justify-content: space-between; 
-            padding: 0 30px; z-index: 1000; pointer-events: none; 
+            padding: 0 40px; z-index: 1000; pointer-events: none; 
         }
         
-        .grupo-izq, .grupo-der { display: flex; gap: 20px; pointer-events: auto; align-items: center; }
+        .cruceta { 
+            display: grid; 
+            grid-template-areas: ". up ." "left . right" ". down .";
+            gap: 10px; pointer-events: auto;
+        }
         
         .btn-touch { 
-            width: 80px; height: 80px; border-radius: 50%; 
+            width: 75px; height: 75px; border-radius: 50%; 
             display: flex; align-items: center; justify-content: center; 
-            font-size: 30px; font-weight: bold; color: white;
+            font-size: 28px; font-weight: bold; color: white;
             user-select: none; border: 3px solid rgba(255,255,255,0.4);
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            background: rgba(0, 150, 255, 0.4); backdrop-filter: blur(5px);
         }
 
-        /* Botones Azules Transparentes */
-        .btn-azul { background: rgba(0, 150, 255, 0.45); backdrop-filter: blur(5px); }
-        .btn-azul:active { background: rgba(0, 150, 255, 0.8); transform: scale(0.9); }
+        .btn-touch:active { transform: scale(0.9); background: rgba(0, 150, 255, 0.8); }
 
-        /* Botón Ataque Rojo */
-        .btn-rojo { 
-            background: rgba(255, 50, 50, 0.7); width: 95px; height: 95px; 
-            border-color: rgba(255,255,255,0.6); font-size: 20px;
+        /* Posiciones de la cruceta */
+        #tUp { grid-area: up; }
+        #tDown { grid-area: down; }
+        #tIzq { grid-area: left; }
+        #tDer { grid-area: right; }
+
+        .grupo-der { display: flex; align-items: center; pointer-events: auto; }
+        
+        .btn-ataque { 
+            background: rgba(255, 50, 50, 0.7); width: 100px; height: 100px; 
+            border-color: rgba(255,255,255,0.6); font-size: 18px;
         }
-        .btn-rojo:active { background: rgba(255, 50, 50, 1); transform: scale(0.9); }
+        .btn-ataque:active { background: rgba(255, 50, 50, 1); }
 
         @media (pointer: coarse) { #controles-movil { display: flex; } }
     </style>
@@ -79,14 +82,14 @@
 
         <div id="pantallaInicio" class="overlay">
             <h1>カルロス: EXPEDICIÓN sopresa</h1>
-        <p> Hola...愛してます.</p>
-            <button class="btn-ui" onclick="iniciarJuego()">¡EMPEZAR!</button>
+            <p> Hola...愛してます.</p>
+            <button class="btn-ui" onclick="iniciarJuego()">¡INICIAR!</button>
         </div>
 
         <div id="pantallaFinal" class="overlay">
             <img id="chicaAnimada" src="img/chica1.png">
-           <h1>🎂 ¡MISIÓN CUMPLIDA CARLOS! 🎂</h1>
-        <h3>Feliz cumpleaños mi terroncito de azúcar, tarde muchas noches programando </br>y pensando en cómo hacerte una aventura especial... </br>Te amo mucho mi vida. ❤️</h3>
+            <h1>🎂 ¡MISIÓN CUMPLIDA CARLOS! 🎂</h1>
+        <h3>Feliz cumpleaños mi terroncito de azúcar, tarde muchas noches programando </br>y pensando en cómo hacerte una aventura especial...</br> Te amo mucho mi vida. ❤️</h3>
         <p>¡Hora De Comer Pastel, Ñan Ñan!</p>
             <button class="btn-ui" onclick="location.reload()">REINICIAR</button>
         </div>
@@ -98,14 +101,14 @@
     </div>
 
     <div id="controles-movil">
-        <div class="grupo-izq">
-            <div id="tIzq" class="btn-touch btn-azul">←</div>
-            <div id="tDer" class="btn-touch btn-azul">→</div>
-            <div id="tDown"class="btn-touch btn-azul">↓</div>
+        <div class="cruceta">
+            <div id="tUp" class="btn-touch">↑</div>
+            <div id="tDown" class="btn-touch">↓</div>
+            <div id="tIzq" class="btn-touch">←</div>
+            <div id="tDer" class="btn-touch">→</div>
         </div>
         <div class="grupo-der">
-            <div id="tUp" class="btn-touch btn-azul">↑</div>
-            <div id="tAtk" class="btn-touch btn-rojo">PUM!</div>
+            <div id="tAtk" class="btn-touch btn-ataque">ATACA!</div>
         </div>
     </div>
 
@@ -182,15 +185,6 @@
     vincularTouch('tDown', 'ArrowDown');
     vincularTouch('tAtk', 'KeyZ');
 
-    window.addEventListener('keydown', e => {
-        if(e.code === 'KeyZ' || e.code === 'Space') { carlos.atacando = true; sfxAtaque.play().catch(()=>{}); }
-        keys[e.code] = true;
-    });
-    window.addEventListener('keyup', e => {
-        if(e.code === 'KeyZ' || e.code === 'Space') carlos.atacando = false;
-        keys[e.code] = false;
-    });
-
     function dispararEnemigo(obj, tipo) {
         sfxEnemigo.play().catch(()=>{});
         let dir = obj.x > carlos.x ? -1 : 1;
@@ -223,11 +217,15 @@
             carlos.y = sigY;
         } else {
             if (keys['ArrowUp']) sigY -= carlos.speed;
-            // En nivel 3, el botón "Ataque" puede servir para bajar si no hay botón abajo, 
-            // pero para Carlos he hecho que se mueva libremente con Up.
-            if (sigY >= 0 && sigY + carlos.h <= canvas.height) carlos.y = sigY;
+            if (keys['ArrowDown']) sigY += carlos.speed;
+            if (sigY >= 0 && sigY + carlos.h <= canvas.height) {
+                let colMuro = false;
+                for (let m of muros) {
+                    if (carlos.x < m.x + m.w && carlos.x + carlos.w > m.x && sigY < m.y + m.h && sigY + carlos.h > m.y) colMuro = true;
+                }
+                if(!colMuro) carlos.y = sigY;
+            }
             
-            // Daño Pullas
             for (let m of muros) {
                 if (carlos.x < m.x + m.w + 10 && carlos.x + carlos.w > m.x - 10 && carlos.y < m.y + m.h && carlos.y + carlos.h > m.y) {
                     carlos.hp -= 0.5;
@@ -260,14 +258,12 @@
             }
         }
 
-        if (nivel === 3) {
-            if (!llave.obtenida && Math.abs(carlos.x - llave.x) < 50 && Math.abs(carlos.y - llave.y) < 50) llave.obtenida = true;
-            if (llave.obtenida && carlos.x > puerta.x - 50 && carlos.y > puerta.y - 50) {
-                juegoActivo = false; sfxFondo.pause(); sfxFinal2.loop = true; sfxFinal2.play(); sfxFinal1.play();
-                document.getElementById('pantallaFinal').style.display = 'flex';
-                animarChicaFinal();
-            }
+        if (nivel === 3 && llave.obtenida && carlos.x > puerta.x - 50 && carlos.y > puerta.y - 50) {
+            juegoActivo = false; sfxFondo.pause(); sfxFinal2.loop = true; sfxFinal2.play(); sfxFinal1.play();
+            document.getElementById('pantallaFinal').style.display = 'flex';
+            animarChicaFinal();
         }
+        if (nivel === 3 && !llave.obtenida && Math.abs(carlos.x - llave.x) < 50 && Math.abs(carlos.y - llave.y) < 50) llave.obtenida = true;
 
         if (carlos.hp <= 0 && !carlos.muerto) {
             carlos.muerto = true; sfxFondo.pause(); sfxPerder.play();
@@ -333,4 +329,3 @@
 </script>
 </body>
 </html>
-
