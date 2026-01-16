@@ -337,6 +337,7 @@ sfxFinal1.play();
         let fondo = nivel === 1 ? imgFondo1 : (nivel === 2 ? imgFondo2 : imgFondo3);
         ctx.drawImage(fondo, 0, 0, 800, 450);
 
+        
         if (nivel === 3) {
     muros.forEach(m => {
         // 1. CREAR EL DEGRADADO (de arriba hacia abajo: m.y a m.y + m.h)
