@@ -3,86 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <title>Carlos: Expedición Extrema</title>
-     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            height: 100vh; overflow: hidden; touch-action: none; 
-        }
+    <style>
+        body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        canvas { border: 4px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: block; }
         
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 56.25vw; 
-            max-height: 100vh;
-            max-width: 177.78vh;
-        }
-
-        canvas { width: 100%; height: 100%; border: 2px solid #444; display: block; }
+        .overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 100; }
         
-        .overlay { 
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            flex-direction: column; align-items: center; justify-content: center; 
-            text-align: center; z-index: 100; padding: 20px; background: rgba(0,0,0,0.85);
-        }
+        /* Estilo para la pantalla de victoria con la chica */
+        #pantallaFinal { background: linear-gradient(to right, #0919ac, #5f6fff,#daa2ff, #fe7b7b, #ac0909); color:  #000000f1;  text-shadow: 20px 2px 14px rgb(255, 255, 255);}
+        #chicaAnimada {  background: linear-gradient(30deg, rgba(255, 123, 0, 0.76), rgba(128, 83, 0, 0.795) 50%, rgba(255, 174, 0, 0.815)); width: 180px; height: 200px; margin-bottom: 10px; transition: transform 0.1s; }
         
-        #pantallaInicio { display: flex; }
-        #pantallaFinal { background: linear-gradient(135deg, #0919ac, #fe7b7b); color: #000; text-shadow: 0 0 10px white; }
-        #chicaAnimada { width: 120px; height: 150px; margin-bottom: 10px; }
-        
-        .btn-ui { padding: 15px 30px; font-size: 20px; font-weight: bold; cursor: pointer; background: #ff4757; color: white; border: none; border-radius: 50px; margin-top: 15px; }
-        
-        /* --- CONTROLES MÓVILES --- */
-        #controles-movil { 
-            position: fixed; bottom: 8%; width: 100%; 
-            display: none; justify-content: space-between; 
-            padding: 0 40px; z-index: 1000; pointer-events: none; 
-        }
-        
-        .cruceta { 
-            display: grid; 
-            grid-template-areas: ". up ." "left . right" ". down .";
-            gap: 10px; pointer-events: auto;
-        }
-        
-        .btn-touch { 
-            width: 75px; height: 75px; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 28px; font-weight: bold; color: white;
-            user-select: none; border: 3px solid rgba(255,255,255,0.4);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            background: rgba(0, 150, 255, 0.4); backdrop-filter: blur(5px);
-        }
-
-        .btn-touch:active { transform: scale(0.9); background: rgba(0, 150, 255, 0.8); }
-
-        #tUp { grid-area: up; }
-        #tDown { grid-area: down; }
-        #tIzq { grid-area: left; }
-        #tDer { grid-area: right; }
-
-        .grupo-der { display: flex; align-items: center; pointer-events: auto; }
-        
-        .btn-ataque { 
-            background: rgba(255, 50, 50, 0.7); width: 100px; height: 100px; 
-            border-color: rgba(255,255,255,0.6); font-size: 18px;
-        }
-
-        @media (pointer: coarse) { #controles-movil { display: flex; } }
+        #pantallaPerder { background: rgba(0, 0, 0, 0.9); color: #fff; }
+        .btn-restart { padding: 15px 35px; font-size: 20px; font-weight: bold; cursor: pointer; background: #ff4757; color: white; border: none; border-radius: 50px; margin-top: 20px; transition: 0.3s; }
+        .btn-restart:hover { transform: scale(1.1); background: #ff6b81; }
     </style>
 </head>
 <body>
 
-    <div id="game-container">
-        
-        <canvas id="gameCanvas"></canvas>
-
-        <div id="pantallaInicio" class="overlay">
-             <h1>カルロス: EXPEDICIÓN sopresa</h1>
-        <p> Hola...愛してます.</p>
-            <button class="btn-ui" onclick="iniciarJuego()">¡INICIAR!</button>
-        </div>
+    <canvas id="gameCanvas"></canvas>
 
     <div id="pantallaFinal" class="overlay">
         <img id="chicaAnimada" src="img/chica1.png" alt="Felicidad">
@@ -102,18 +40,6 @@
         <button class="btn-restart" onclick="location.reload()">REINTENTAR</button>
     </div>
 
-    <div id="controles-movil">
-        <div class="cruceta">
-            <div id="tUp" class="btn-touch">↑</div>
-            <div id="tDown" class="btn-touch">↓</div>
-            <div id="tIzq" class="btn-touch">←</div>
-            <div id="tDer" class="btn-touch">→</div>
-        </div>
-        <div class="grupo-der">
-            <div id="tAtk" class="btn-touch btn-ataque">ATACA!</div>
-        </div>
-    </div>
-    
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -187,24 +113,6 @@
         keys[e.code] = false;
     });
 
-// --- ESCUCHA DE TOUCH (MÓVIL) ---
-    const vincularTouch = (id, tecla) => {
-        const el = document.getElementById(id);
-        el.addEventListener('touchstart', (e) => { 
-            e.preventDefault(); keys[tecla] = true; 
-            if(tecla === 'KeyZ') { carlos.atacando = true; sfxAtaque.play().catch(()=>{}); }
-        });
-        el.addEventListener('touchend', (e) => { 
-            e.preventDefault(); keys[tecla] = false; 
-            if(tecla === 'KeyZ') carlos.atacando = false; 
-        });
-    };
-    vincularTouch('tIzq', 'ArrowLeft');
-    vincularTouch('tDer', 'ArrowRight');
-    vincularTouch('tUp', 'ArrowUp');
-    vincularTouch('tDown', 'ArrowDown');
-    vincularTouch('tAtk', 'KeyZ');
-    
     function detenerMusica() { sfxFondo.pause(); sfxFondo.currentTime = 0; }
 
     function checkColision(nx, ny) {
@@ -337,7 +245,6 @@ sfxFinal1.play();
         let fondo = nivel === 1 ? imgFondo1 : (nivel === 2 ? imgFondo2 : imgFondo3);
         ctx.drawImage(fondo, 0, 0, 800, 450);
 
-        
         if (nivel === 3) {
     muros.forEach(m => {
         // 1. CREAR EL DEGRADADO (de arriba hacia abajo: m.y a m.y + m.h)
